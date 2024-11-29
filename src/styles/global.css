@@ -1,0 +1,13 @@
+:root {
+  --card-background: #f4f4f4;
+  --card-button-background: #0597fa;
+  --card-button-foreground: #fff;
+
+  --font-family: "Lato", sans-serif;
+}
+
+*{
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+}
