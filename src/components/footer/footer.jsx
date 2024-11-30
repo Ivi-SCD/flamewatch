@@ -38,6 +38,7 @@ const FooterSection = styled.div`
   }
 
   p {
+    font-family: "Roboto", "Helvetica", "Arial", sans-serif;
     font-size: 14px;
     margin: 5px 0;
   }
@@ -76,12 +77,14 @@ const LogoContainer = styled.div`
 `;
 
 const FooterBottom = styled.div`
+  font-family: "Roboto", "Helvetica", "Arial", sans-serif;
   text-align: center;
   margin-top: 20px;
   padding-top: 20px;
   border-top: 1px solid rgba(0, 0, 0, 0.1);
 
   p {
+    font-family: "Roboto", "Helvetica", "Arial", sans-serif;
     font-size: 14px;
     margin: 0;
   }
@@ -90,6 +93,7 @@ const FooterBottom = styled.div`
     padding-top: 15px;
 
     p {
+      font-family: "Roboto", "Helvetica", "Arial", sans-serif;
       font-size: 12px;
     }
   }
@@ -125,7 +129,7 @@ export const Footer = () => {
       </FooterBox>
       <FooterBottom>
         <p>
-          Copyright © 2024 - Feito com muito ❤️ e carinho!!
+          Copyright © 2024 - Feito por Ivi-SCD & Debora-Farias ;)
         </p>
       </FooterBottom>
     </StyledFooter>
