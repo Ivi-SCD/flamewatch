@@ -7,7 +7,6 @@ import NotificationsIcon from '@mui/icons-material/Notifications';
 import PeopleIcon from '@mui/icons-material/People';
 import DeviceThermostatIcon from '@mui/icons-material/DeviceThermostat';
 import AirIcon from '@mui/icons-material/Air';
-import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import { useNavigate } from 'react-router-dom';
 
 const StyledCard = styled(Card)`
@@ -234,15 +233,6 @@ export const Home = () => {
                     <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
                       {feature.description}
                     </Typography>
-                    <Button
-                      endIcon={<ArrowForwardIcon />}
-                      sx={{ 
-                        color: '#ff6b35',
-                        '&:hover': { color: '#ff8f6b' }
-                      }}
-                    >
-                      Saiba mais
-                    </Button>
                   </CardContent>
                 </StyledCard>
               </Grid>
