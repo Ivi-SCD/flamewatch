@@ -5,16 +5,17 @@ export default defineConfig({
   plugins: [react()],
   build: {
     rollupOptions: {
-      external: ['react-leaflet', 'papaparse'],
+      external: ['react-leaflet', 'papaparse', '@google/generative-ai'],
       output: {
         globals: {
           'react-leaflet': 'ReactLeaflet',
-          'papaparse': 'Papa'
+          'papaparse': 'Papa',
+          '@google/generative-ai': 'GoogleGenerativeAI'
         }
       }
     }
   },
   optimizeDeps: {
-    include: ['react-leaflet', 'papaparse']
+    include: ['react-leaflet', 'papaparse', '@google/generative-ai']
   }
 })
