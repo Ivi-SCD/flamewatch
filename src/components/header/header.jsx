@@ -1,94 +1,123 @@
 import styled from "styled-components"
-import { Link } from "react-router-dom";
-
+import { Link } from "react-router-dom"
+import logo from "../../assets/logo.webp";
 
 const CabecalhoContainer = styled.header`
-    width: 100%;
-    display: flex;
-    justify-content: center;
-`
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  background-color: #fff;
+`;
 
 const Cabecalho = styled.header`
-    max-width: 1200px;
-    width: 100%;
-    height: 70px;
-    /* border: red solid; */
-    background-color: #FFF;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0 20px;
-`
+  max-width: 1200px;
+  width: 100%;
+  height: 70px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+
+  @media (max-width: 768px) {
+    height: auto;
+    flex-direction: column;
+    padding: 10px 15px;
+  }
+`;
 
 const Moldura = styled.div`
-    width: 140px;
-`
+  width: 160px;
 
-const Logo = styled.img`
+  @media (max-width: 768px) {
+    width: 120px;
+  }
+`;
+
+const LogoContainer = styled.div`
+  width: 100%;
+  height: 100%;
+
+  img {
     width: 100%;
-    height: 100%;
-`
+    height: auto;
+  }
+`;
 
 const Div = styled.nav`
-    display: flex;
-    gap: 8px;
-    /* border: red solid 1px; */
-    align-items: center;
-`
+  display: flex;
+  gap: 8px;
+  align-items: center;
+
+  @media (max-width: 768px) {
+    margin-top: 10px;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 15px;
+  }
+`;
 
 const ButtonWhite = styled.button`
-    color: #0597FA;
-    /* border: red solid 1px; */
+  color: #ff6b35;
+  width: 100px;
+  font-family: var(--font-family);
+  font-size: 16px;
+  padding: 5px;
+  border: none;
+  font-weight: 600;
+  background-color: white;
+  cursor: pointer;
+
+  @media (max-width: 768px) {
+    width: 80px;
+    font-size: 14px;
+  }
+`;
+
+const ButtonOrange = styled.button`
+  cursor: pointer;
+  color: white;
+  width: 140px;
+  font-family: var(--font-family);
+  font-size: 16px;
+  padding: 10px;
+  border: none;
+  font-weight: 600;
+  background-color: #ff6b35;
+  border-radius: 10px;
+  box-shadow: rgba(0, 0, 0, 0.24) 0px 3px 8px;
+  transition: all 0.4s ease-in-out;
+
+  &:hover {
+    background-color: #ff8f6b;
+  }
+
+  @media (max-width: 768px) {
     width: 100px;
-    font-family: var(--font-family);
-    font-size: 16px;
-    padding: 5px;
-    border: none;
-    font-weight: 600;
-    background-color: white;
-    cursor: pointer;
-`
-
-const ButtonBlue = styled.button`
-    cursor: pointer;
-    color: white;
-    /* border: red solid 1px; */
-    width: 140px;
-    font-family: var(--font-family);
-    font-size: 16px;
-    padding: 10px;
-    border: none;
-    font-weight: 600;
-    background-color: #0597FA;
-    border-radius: 10px;
-    box-shadow: rgba(0, 0, 0, 0.24) 0px 3px 8px;
-    transition: all .4s ease-in-out;
-
-    &:hover {
-        background-color: #33a2ed;
-    }
-`
-
+    font-size: 14px;
+  }
+`;
 export const Header = () => {
     return(
         <CabecalhoContainer>
             
             <Cabecalho>
                 <Link to={"/"}>
-                    <Moldura>
-                        <Logo  alt=""/>
-                    </Moldura>
+                <Moldura>
+                    <LogoContainer>
+                       <img src={logo} alt="logo" style={{ width: "100%", height: "100%" }} />
+                    </LogoContainer>
+                </Moldura>
                 </Link>
             
                 {
                      
                         <Div>
-                             <Link to={"/"}>
-                                <ButtonBlue>Home</ButtonBlue>
+
+                            <Link to={"/"}>
+                                <ButtonWhite>Home</ButtonWhite>
                             </Link>
-                            
                             <Link to={"/dashboard"}>
-                                <ButtonWhite>Dashboard</ButtonWhite>
+                                <ButtonOrange>Acessar Dashboard</ButtonOrange>
                             </Link>
                         
                         </Div> 
