@@ -1,13 +1,4 @@
 {
-"routes": [
-    {
-      "src": "/(.*)",
-      "dest": "/",
-      "headers": {
-        "cache-control": "s-maxage=31536000, immutable"
-      }
-    }
-  ],
   "rewrites": [
     {"source": "/(.*)", "destination": "/"}
   ]
