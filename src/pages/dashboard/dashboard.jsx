@@ -1,14 +1,21 @@
 import { useState, useEffect } from 'react';
-import { Box, Typography, Grid, Card, CardContent, CardHeader, Slider, Select, MenuItem, 
-         FormControl, InputLabel, Alert, AlertTitle, Tabs, Tab, CircularProgress } from '@mui/material';
-import { Thermostat, WaterDrop, WindPower, WarningAmber, Agriculture, 
-         Landscape, WbSunny } from '@mui/icons-material';
+import { WeatherService } from '../../services/weather/weatherService';
+import { getStationCoordinates, calculateRiskLevel, getRiskColor, getLastRainfall } from '../../utils/stationUtils';
+import {
+  Box, Typography, Grid, Card, CardContent, CardHeader, Slider, Select, MenuItem,
+  FormControl, InputLabel, Alert, AlertTitle, Tabs, Tab, CircularProgress
+} from '@mui/material';
+import {
+  Thermostat, WaterDrop, WindPower, WarningAmber, Agriculture,
+  Landscape, WbSunny
+} from '@mui/icons-material';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { MapContainer, TileLayer, Circle, Popup, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Circle, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Header } from '../../components/header/header';
-import geminiService from '../../services/gemini/geminiService'
+import geminiService from '../../services/gemini/geminiService';
 import styled from '@emotion/styled';
+import InteractiveChat from '../../components/interactivechat/interactivechat';
 
 const StyledCard = styled(Card)`
   transition: all 0.3s ease-in-out;
@@ -18,57 +25,9 @@ const StyledCard = styled(Card)`
   }
 `;
 
-const agriculturalRegions = [
-  {
-    id: 1,
-    name: 'Cristalina',
-    lat: -16.7675,
-    lng: -47.6131,
-    riskLevel: 85,
-    crops: ['Soja', 'Milho'],
-    soilCondition: 'Seco',
-    lastRainfall: '7 dias atrás',
-    temperature: 32,
-    humidity: 45
-  },
-  {
-    id: 2,
-    name: 'Rio Verde',
-    lat: -17.7985,
-    lng: -50.9192,
-    riskLevel: 65,
-    crops: ['Soja', 'Milho', 'Algodão'],
-    soilCondition: 'Moderado',
-    lastRainfall: '3 dias atrás',
-    temperature: 30,
-    humidity: 55
-  },
-  {
-    id: 3,
-    name: 'Jataí',
-    lat: -17.8783,
-    lng: -51.7173,
-    riskLevel: 75,
-    crops: ['Soja', 'Cana'],
-    soilCondition: 'Moderado',
-    lastRainfall: '5 dias atrás',
-    temperature: 31,
-    humidity: 50
-  }
-];
-
-const mockTimeSeriesData = [
-  { time: '00:00', iri: 45, temp: 28, humidity: 60, windSpeed: 10 },
-  { time: '04:00', iri: 52, temp: 26, humidity: 55, windSpeed: 12 },
-  { time: '08:00', iri: 65, temp: 30, humidity: 45, windSpeed: 15 },
-  { time: '12:00', iri: 78, temp: 34, humidity: 35, windSpeed: 18 },
-  { time: '16:00', iri: 72, temp: 32, humidity: 40, windSpeed: 14 },
-  { time: '20:00', iri: 58, temp: 29, humidity: 50, windSpeed: 11 }
-];
-
-const MapComponent = ({ onRegionSelect }) => {
+const MapComponent = ({ stations, onRegionSelect }) => {
   return (
-    <MapContainer 
+    <MapContainer
       center={[-16.6869, -49.2648]}
       zoom={7}
       style={{ height: '500px', width: '100%' }}
@@ -77,35 +36,33 @@ const MapComponent = ({ onRegionSelect }) => {
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         attribution='&copy; OpenStreetMap contributors'
       />
-      {agriculturalRegions.map((region) => (
+      {stations.map((station) => (
         <Circle
-          key={region.id}
-          center={[region.lat, region.lng]}
+          key={station.id}
+          center={[station.lat, station.lng]}
           pathOptions={{
-            color: region.riskLevel > 75 ? '#ff4757' : 
-                   region.riskLevel > 50 ? '#ffa502' : '#2ed573',
-            fillColor: region.riskLevel > 75 ? '#ff4757' : 
-                      region.riskLevel > 50 ? '#ffa502' : '#2ed573',
+            color: getRiskColor(station.riskLevel),
+            fillColor: getRiskColor(station.riskLevel),
             fillOpacity: 0.6
           }}
           radius={20000}
           eventHandlers={{
-            click: () => onRegionSelect(region)
+            click: () => onRegionSelect(station)
           }}
         >
           <Popup>
             <Box sx={{ p: 1 }}>
               <Typography variant="subtitle1" fontWeight="bold">
-                {region.name}
+                {station.name}
               </Typography>
               <Typography variant="body2">
-                Risco: {region.riskLevel}/100
+                IRI: {station.riskLevel}/100
               </Typography>
               <Typography variant="body2">
-                Culturas: {region.crops.join(', ')}
+                Temperatura: {station.temperature}°C
               </Typography>
               <Typography variant="body2">
-                Última Chuva: {region.lastRainfall}
+                Umidade: {station.humidity}%
               </Typography>
             </Box>
           </Popup>
@@ -116,11 +73,99 @@ const MapComponent = ({ onRegionSelect }) => {
 };
 
 export const Dashboard = () => {
-  const [activeRegion, setActiveRegion] = useState(agriculturalRegions[0]);
+  const [stations, setStations] = useState([]);
+  const [timeSeriesData, setTimeSeriesData] = useState([]);
+  const [activeRegion, setActiveRegion] = useState(null);
   const [alertValue, setAlertValue] = useState(75);
   const [activeTab, setActiveTab] = useState(0);
   const [recommendations, setRecommendations] = useState(null);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const loadWeatherData = async () => {
+      try {
+        const stationSummaries = await WeatherService.getStationSummaries();
+
+        if (!stationSummaries || stationSummaries.length === 0) {
+          console.log('Nenhum dado recebido');
+          return;
+        }
+
+        const stationData = stationSummaries.map(record => {
+          const coordinates = getStationCoordinates(record.estacao);
+
+          return {
+            id: record.estacao,
+            name: record.estacao?.replace(';', '').trim(),
+            lat: coordinates.lat,
+            lng: coordinates.lng,
+            riskLevel: calculateRiskLevel(record),
+            temperature: record.temperatura || '-',
+            humidity: record.umidade || '-',
+            windSpeed: record.velocidade_vento || '-',
+            lastRainfall: record.precipitacao ? 'Hoje' : 'Sem registro'
+          };
+        });
+
+        setStations(stationData);
+
+        // Só define a região ativa se não houver uma
+        if (stationData.length > 0 && !activeRegion) {
+          setActiveRegion(stationData[0]);
+        }
+      } catch (error) {
+        console.error('Error loading station data:', error);
+      }
+    };
+
+    loadWeatherData();
+  }, []); // Sem dependências
+
+  // Segundo useEffect - Atualização dos dados temporais
+  useEffect(() => {
+    const updateTimeSeriesData = async () => {
+      if (!activeRegion?.name) return;
+
+      try {
+        const data = await WeatherService.getWeatherData();
+        const stationData = data
+          .filter(row => row.estacao?.replace(';', '').trim() === activeRegion.name)
+          .map(row => ({
+            time: `${String(row.hora).padStart(2, '0')}:00`,
+            iri: calculateRiskLevel(row), // Usa a função de cálculo de IRI
+            temp: row.temperatura,
+            humidity: row.umidade
+          }))
+          .sort((a, b) => parseInt(a.time) - parseInt(b.time));
+
+        console.log('Dados processados:', stationData); // Debug
+        setTimeSeriesData(stationData);
+      } catch (error) {
+        console.error('Error:', error);
+        setTimeSeriesData([]);
+      }
+    };
+
+    updateTimeSeriesData();
+  }, [activeRegion?.name]);
+
+  useEffect(() => {
+    const updateTimeSeriesData = async () => {
+      if (activeRegion) {
+        const data = await WeatherService.getWeatherData();
+        const stationData = data
+          .filter(row => row.estacao?.replace(';', '').trim() === activeRegion.name)
+          .map((row, index) => ({
+            time: `${String(index).padStart(2, '0')}:00`,
+            iri: calculateRiskLevel(row),
+            temp: row.temperatura,
+            humidity: row.umidade
+          }));
+      }
+    };
+
+    updateTimeSeriesData();
+  }, [activeRegion]);
 
   useEffect(() => {
     const generateRecommendations = async () => {
@@ -131,13 +176,11 @@ export const Dashboard = () => {
             activeRegion.riskLevel,
             {
               type: 'agricultor',
-              crops: activeRegion.crops,
               region: activeRegion.name,
               weatherConditions: {
                 temperature: activeRegion.temperature,
                 humidity: activeRegion.humidity,
-                lastRainfall: activeRegion.lastRainfall,
-                soilCondition: activeRegion.soilCondition
+                lastRainfall: activeRegion.lastRainfall
               }
             }
           );
@@ -157,11 +200,20 @@ export const Dashboard = () => {
     setActiveRegion(region);
   };
 
+  if (!activeRegion) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
   return (
     <>
       <Header />
       <Box sx={{ minHeight: '100vh', bgcolor: 'background.default', p: 6 }}>
         <Box sx={{ maxWidth: '1200px', mx: 'auto', spaceY: 6 }}>
+          {/* Header Section */}
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
             <Typography variant="h4" component="h1" sx={{ fontWeight: 'bold' }}>
               FlameWatch Dashboard
@@ -171,7 +223,8 @@ export const Dashboard = () => {
             </Typography>
           </Box>
 
-          {activeRegion.riskLevel > 75 && (
+          {/* Alert Section */}
+          {activeRegion.riskLevel > alertValue && (
             <Alert severity="error" sx={{ mb: 4 }}>
               <AlertTitle>Alerta de Alto Risco</AlertTitle>
               Índice de Risco de Incêndio (IRI) excede {alertValue} em {activeRegion.name}.
@@ -179,12 +232,15 @@ export const Dashboard = () => {
             </Alert>
           )}
 
+          {/* Metrics and Chart Grid */}
           <Grid container spacing={6} sx={{ mb: 4 }}>
+            {/* Metrics Card */}
             <Grid item xs={12} md={3}>
               <StyledCard>
                 <CardHeader title="Métricas Atuais" />
                 <CardContent>
                   <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                    {/* Temperature */}
                     <Box sx={{ display: 'flex', alignItems: 'center' }}>
                       <WbSunny sx={{ color: '#ffa502', mr: 2 }} />
                       <div>
@@ -194,6 +250,7 @@ export const Dashboard = () => {
                         <Typography variant="h6">{activeRegion.temperature}°C</Typography>
                       </div>
                     </Box>
+                    {/* Humidity */}
                     <Box sx={{ display: 'flex', alignItems: 'center' }}>
                       <WaterDrop sx={{ color: '#2ed573', mr: 2 }} />
                       <div>
@@ -203,6 +260,7 @@ export const Dashboard = () => {
                         <Typography variant="h6">{activeRegion.humidity}%</Typography>
                       </div>
                     </Box>
+                    {/* IRI */}
                     <Box sx={{ display: 'flex', alignItems: 'center' }}>
                       <Landscape sx={{ color: '#ff4757', mr: 2 }} />
                       <div>
@@ -212,48 +270,40 @@ export const Dashboard = () => {
                         <Typography variant="h6">{activeRegion.riskLevel}/100</Typography>
                       </div>
                     </Box>
-                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                      <Agriculture sx={{ color: '#8854d0', mr: 2 }} />
-                      <div>
-                        <Typography variant="body2" color="textSecondary">
-                          Culturas
-                        </Typography>
-                        <Typography variant="h6">{activeRegion.crops.length} Tipos</Typography>
-                      </div>
-                    </Box>
                   </Box>
                 </CardContent>
               </StyledCard>
             </Grid>
 
+            {/* Chart Card */}
             <Grid item xs={12} md={9}>
               <StyledCard>
                 <CardHeader title="Evolução Temporal do IRI" />
                 <CardContent sx={{ height: 400 }}>
                   <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={mockTimeSeriesData}>
+                    <LineChart data={timeSeriesData}>
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis dataKey="time" />
                       <YAxis />
                       <Tooltip />
-                      <Line 
-                        type="monotone" 
-                        dataKey="iri" 
-                        stroke="#ff4757" 
+                      <Line
+                        type="monotone"
+                        dataKey="iri"
+                        stroke="#ff4757"
                         strokeWidth={2}
                         name="IRI"
                       />
-                      <Line 
-                        type="monotone" 
-                        dataKey="temp" 
-                        stroke="#ffa502" 
+                      <Line
+                        type="monotone"
+                        dataKey="temp"
+                        stroke="#ffa502"
                         strokeWidth={2}
                         name="Temperatura"
                       />
-                      <Line 
-                        type="monotone" 
-                        dataKey="humidity" 
-                        stroke="#2ed573" 
+                      <Line
+                        type="monotone"
+                        dataKey="humidity"
+                        stroke="#2ed573"
                         strokeWidth={2}
                         name="Umidade"
                       />
@@ -264,9 +314,10 @@ export const Dashboard = () => {
             </Grid>
           </Grid>
 
+          {/* Tabs Section */}
           <Box sx={{ mb: 4 }}>
-            <Tabs 
-              value={activeTab} 
+            <Tabs
+              value={activeTab}
               onChange={(e, newValue) => setActiveTab(newValue)}
               sx={{ borderBottom: 1, borderColor: 'divider' }}
             >
@@ -276,40 +327,31 @@ export const Dashboard = () => {
             </Tabs>
 
             <Box sx={{ mt: 2 }}>
+              {/* Map Tab */}
               {activeTab === 0 && (
                 <StyledCard>
                   <CardContent>
-                    <MapComponent onRegionSelect={handleRegionSelect} />
+                    <MapComponent
+                      stations={stations}
+                      onRegionSelect={handleRegionSelect}
+                    />
                   </CardContent>
                 </StyledCard>
               )}
 
+              {/* Recommendations Tab */}
               {activeTab === 1 && (
                 <StyledCard>
                   <CardContent>
-                    {loading ? (
-                      <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
-                        <CircularProgress />
-                      </Box>
-                    ) : recommendations ? (
-                      <Box>
-                        <Alert severity="info" sx={{ mb: 3 }}>
-                          <AlertTitle>Análise Personalizada para {activeRegion.name}</AlertTitle>
-                          {recommendations}
-                        </Alert>
-                        <Typography variant="body2" color="textSecondary">
-                          Última atualização: {new Date().toLocaleString()}
-                        </Typography>
-                      </Box>
-                    ) : (
-                      <Typography>
-                        Selecione uma região no mapa para receber recomendações personalizadas.
-                      </Typography>
-                    )}
+                    <InteractiveChat
+                      activeRegion={activeRegion}
+                      weatherData={timeSeriesData}
+                    />
                   </CardContent>
                 </StyledCard>
               )}
 
+              {/* Alert Settings Tab */}
               {activeTab === 2 && (
                 <StyledCard>
                   <CardContent>
