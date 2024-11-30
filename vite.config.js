@@ -13,9 +13,6 @@ export default defineConfig({
           'papaparse': 'Papa'
         },
         manualChunks(id) {
-          if (id.includes('@google/generative-ai')) {
-            return 'google-ai'
-          }
           if (id.includes('node_modules')) {
             return 'vendor'
           }
@@ -23,12 +20,7 @@ export default defineConfig({
       }
     }
   },
-  resolve: {
-    alias: {
-      '@google/generative-ai': '@google/generative-ai/dist/index.js'
-    }
-  },
   optimizeDeps: {
-    include: ['react-leaflet', 'papaparse', '@google/generative-ai']
+    include: ['react-leaflet', 'papaparse']
   }
 })
