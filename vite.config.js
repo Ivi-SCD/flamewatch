@@ -5,15 +5,16 @@ export default defineConfig({
   plugins: [react()],
   build: {
     rollupOptions: {
-      external: ['react-leaflet'],
+      external: ['react-leaflet', 'papaparse'],
       output: {
         globals: {
-          'react-leaflet': 'ReactLeaflet'
+          'react-leaflet': 'ReactLeaflet',
+          'papaparse': 'Papa'
         }
       }
     }
   },
   optimizeDeps: {
-    include: ['react-leaflet']
+    include: ['react-leaflet', 'papaparse']
   }
 })
