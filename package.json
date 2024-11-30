@@ -20,7 +20,9 @@
     "react-dom": "^18.3.1",
     "react-router-dom": "^7.0.1",
     "recharts": "^2.13.3",
-    "styled-components": "^6.1.13"
+    "styled-components": "^6.1.13",
+    "leaflet": "^1.9.4",
+    "react-leaflet": "^4.2.1"
   },
   "devDependencies": {
     "@eslint/js": "^9.15.0",
