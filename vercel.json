@@ -1,5 +1,29 @@
 {
-    "rewrites": [
-    { "source": "/(.*)", "destination": "/index.html" }
-  ]
-}
+    "version": 2,
+    "builds": [
+      {
+        "src": "package.json",
+        "use": "@vercel/node",
+        "config": {
+          "includeOnly": "dist"
+        }
+      },
+      {
+        "src": "dist/**",
+        "use": "@vercel/static",
+        "config": {
+          "maxDuration": 30,
+          "runtime": "edge-node.13"
+        }
+      }
+    ],
+    "routes": [
+      {
+        "src": "/(.*)",
+        "dest": "/",
+        "headers": {
+          "cache-control": "s-maxage=31536000, immutable"
+        }
+      }
+    ]
+  }
