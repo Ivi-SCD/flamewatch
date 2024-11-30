@@ -1,29 +1,16 @@
 {
-    "version": 2,
+    "version": 3,
     "builds": [
       {
-        "src": "package.json",
-        "use": "@vercel/node",
-        "config": {
-          "includeOnly": "dist"
-        }
-      },
-      {
         "src": "dist/**",
-        "use": "@vercel/static",
-        "config": {
-          "maxDuration": 30,
-          "runtime": "edge-node.13"
-        }
+        "use": "@vercel/static"
       }
     ],
     "routes": [
       {
         "src": "/(.*)",
-        "dest": "/",
-        "headers": {
-          "cache-control": "s-maxage=31536000, immutable"
-        }
+        "dest": "/index.html"
       }
     ]
   }
+  
